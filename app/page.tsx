@@ -1,103 +1,178 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MoodSelector } from '@/components/MoodSelector';
+import { DiaryEntry } from '@/components/DiaryEntry';
+import { MoodCalendar } from '@/components/MoodCalendar';
+import { MoodChart } from '@/components/MoodChart';
+import { EntryDetail } from '@/components/EntryDetail';
+import { DayEntriesList } from '@/components/DayEntriesList';
+import { Timeline } from '@/components/Timeline';
+import { List, BookOpen, Calendar, BarChart3 } from 'lucide-react';
+
+interface MoodEntry {
+  id: string;
+  title: string;
+  content: string;
+  color: string;
+  icon: string;
+  date: string;
+  timestamp: string;
+}
+
+// Mock initial data
+const mockEntries: MoodEntry[] = [
+  {
+    id: "mock-1",
+    title: "楽しい一日",
+    content: "友達と遊んで、とても楽しい時間を過ごしました。今日は本当に幸せな気分です。",
+    color: "#FFD700",
+    icon: "Sun",
+    date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+    timestamp: new Date(Date.now() - 86400000 + 36000000).toISOString(),
+  },
+  {
+    id: "mock-2", 
+    title: "静かな午後",
+    content: "雨の音を聞きながら読書をしました。とても穏やかで心地よい時間でした。",
+    color: "#87CEEB",
+    icon: "Cloud",
+    date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // Yesterday
+    timestamp: new Date(Date.now() - 86400000 + 50400000).toISOString(), // Yesterday 14:00
+  },
+  {
+    id: "mock-3",
+    title: "新しい挑戦",
+    content: "新しいプロジェクトを始めました。情熱を持って取り組んでいきたいと思います。",
+    color: "#FF6B6B",
+    icon: "Zap",
+    date: new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0], // 2 days ago
+    timestamp: new Date(Date.now() - 86400000 * 2 + 32400000).toISOString(), // 2 days ago 09:00
+  },
+];
+
+export default function Page() {
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedIcon, setSelectedIcon] = useState('');
+  const [entries, setEntries] = useState<MoodEntry[]>(mockEntries);
+  const [selectedEntry, setSelectedEntry] = useState<MoodEntry | null>(null);
+  const [selectedDayEntries, setSelectedDayEntries] = useState<MoodEntry[]>([]);
+
+  // Load entries from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('moodEntries');
+    if (saved) {
+      try {
+        const parsedEntries = JSON.parse(saved);
+        setEntries([...mockEntries, ...parsedEntries]);
+      } catch (error) {
+        console.error('Failed to load entries:', error);
+      }
+    }
+  }, []);
+
+  // Save entries to localStorage whenever entries change
+  useEffect(() => {
+    const userEntries = entries.filter(entry => 
+      !mockEntries.some(mock => mock.id === entry.id)
+    );
+    localStorage.setItem('moodEntries', JSON.stringify(userEntries));
+  }, [entries]);
+
+  const handleSaveEntry = (newEntry: MoodEntry) => {
+    setEntries(prev => [newEntry, ...prev]);
+    setSelectedColor('');
+    setSelectedIcon('');
+  };
+
+  const handleEntryClick = (entry: MoodEntry) => {
+    setSelectedEntry(entry);
+    setSelectedDayEntries([]);
+  };
+
+  const handleDayClick = (dayEntries: MoodEntry[]) => {
+    setSelectedDayEntries(dayEntries);
+    setSelectedEntry(null);
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-4 max-w-6xl">
+        <header className="text-center mb-8">
+          <h1 className="mb-2">気分シェア × ミニ日記</h1>
+          <p className="text-muted-foreground">
+            今日の気分を色とアイコンで表現して、日記と一緒に記録しましょう
+          </p>
+        </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+        <Tabs defaultValue="write" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="write" className="flex items-center gap-2">
+              <BookOpen size={16} />
+              書く
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="flex items-center gap-2">
+              <List size={16} />
+              一覧
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="flex items-center gap-2">
+              <Calendar size={16} />
+              カレンダー
+            </TabsTrigger>
+            <TabsTrigger value="chart" className="flex items-center gap-2">
+              <BarChart3 size={16} />
+              分析
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="write" className="space-y-6">
+            <div className="grid lg:grid-cols-2 gap-6">
+              <MoodSelector
+                selectedColor={selectedColor}
+                selectedIcon={selectedIcon}
+                onColorChange={setSelectedColor}
+                onIconChange={setSelectedIcon}
+              />
+              <DiaryEntry
+                selectedColor={selectedColor}
+                selectedIcon={selectedIcon}
+                onSave={handleSaveEntry}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="timeline">
+            <Timeline
+              entries={entries}
+              onEntryClick={handleEntryClick}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <MoodCalendar
+              entries={entries}
+              onEntryClick={handleEntryClick}
+              onDayClick={handleDayClick}
+            />
+          </TabsContent>
+
+          <TabsContent value="chart">
+            <MoodChart entries={entries} />
+          </TabsContent>
+        </Tabs>
+
+        <EntryDetail
+          entry={selectedEntry}
+          onClose={() => setSelectedEntry(null)}
+        />
+
+        <DayEntriesList
+          entries={selectedDayEntries}
+          onClose={() => setSelectedDayEntries([])}
+          onEntryClick={handleEntryClick}
+        />
+      </div>
     </div>
   );
 }
