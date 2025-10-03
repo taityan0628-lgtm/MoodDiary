@@ -8,11 +8,7 @@ import {
   CardTitle,
   CardDescription,
 } from "./ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "./ui/chart";
+import { ChartContainer } from "./ui/chart";
 import * as Icons from "lucide-react";
 import {
   ResponsiveContainer,
@@ -131,13 +127,8 @@ export function MoodChart({ entries }: MoodChartProps) {
     maxStreak = Math.max(maxStreak, currentStreak);
 
     const today = new Date().toISOString().split("T")[0];
-    const yesterday = new Date(Date.now() - 86400000)
-      .toISOString()
-      .split("T")[0];
     const hasToday = sortedDates.includes(today);
-    const hasYesterday = sortedDates.includes(yesterday);
-
-    if (!hasToday && sortedDates[sortedDates.length - 1] !== yesterday) {
+    if (!hasToday && sortedDates[sortedDates.length - 1] !== today) {
       currentStreak = 0;
     }
 
@@ -221,26 +212,26 @@ export function MoodChart({ entries }: MoodChartProps) {
       {/* 折れ線グラフ: 1週間のトレンド */}
       <Card>
         <CardHeader>
-            <CardTitle>1週間のトレンド</CardTitle>
-            <CardDescription>過去7日間の記録数</CardDescription>
+          <CardTitle>1週間のトレンド</CardTitle>
+          <CardDescription>過去7日間の記録数</CardDescription>
         </CardHeader>
         <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
+          <ChartContainer config={chartConfig} className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weeklyTrend}>
+              <LineChart data={weeklyTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
                 <Line
-                    type="monotone"
-                    dataKey="count"
-                    stroke="hsl(var(--primary))"
+                  type="monotone"
+                  dataKey="count"
+                  stroke="hsl(var(--primary))"
                 />
-                </LineChart>
+              </LineChart>
             </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
+          </ChartContainer>
+        </CardContent>
       </Card>
 
       {/* 円グラフ + 棒グラフ */}

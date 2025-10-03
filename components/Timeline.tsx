@@ -1,11 +1,17 @@
-import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader } from './ui/card';
-import { Input } from './ui/input';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Search, Calendar as CalendarIcon, Filter } from 'lucide-react';
-import * as Icons from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { useState, useMemo } from "react";
+import { Card, CardContent, CardHeader } from "./ui/card";
+import { Input } from "./ui/input";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Search, Calendar as CalendarIcon, Filter } from "lucide-react";
+import * as Icons from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 interface MoodEntry {
   id: string;
@@ -23,30 +29,30 @@ interface TimelineProps {
 }
 
 export function Timeline({ entries, onEntryClick }: TimelineProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
-  const [colorFilter, setColorFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [colorFilter, setColorFilter] = useState<string>("all");
 
   const uniqueColors = useMemo(() => {
-    const colors = new Set(entries.map(entry => entry.color));
+    const colors = new Set(entries.map((entry) => entry.color));
     return Array.from(colors);
   }, [entries]);
 
   const filteredAndSortedEntries = useMemo(() => {
-    let filtered = entries.filter(entry => {
-      const matchesSearch = 
+    const filtered = entries.filter((entry) => {
+      const matchesSearch =
         entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         entry.content.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesColor = colorFilter === 'all' || entry.color === colorFilter;
-      
+
+      const matchesColor = colorFilter === "all" || entry.color === colorFilter;
+
       return matchesSearch && matchesColor;
     });
 
     return filtered.sort((a, b) => {
       const dateA = new Date(a.timestamp).getTime();
       const dateB = new Date(b.timestamp).getTime();
-      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
     });
   }, [entries, searchQuery, sortOrder, colorFilter]);
 
@@ -58,22 +64,26 @@ export function Timeline({ entries, onEntryClick }: TimelineProps) {
   const formatDateTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
-    const timeStr = date.toLocaleTimeString('ja-JP', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    const diffDays = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    const timeStr = date.toLocaleTimeString("ja-JP", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
-    
+
     if (diffDays === 0) return `今日 ${timeStr}`;
     if (diffDays === 1) return `昨日 ${timeStr}`;
     if (diffDays < 7) return `${diffDays}日前 ${timeStr}`;
-    
-    return date.toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }) + ` ${timeStr}`;
+
+    return (
+      date.toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }) + ` ${timeStr}`
+    );
   };
 
   return (
@@ -81,9 +91,7 @@ export function Timeline({ entries, onEntryClick }: TimelineProps) {
       <Card>
         <CardHeader>
           <h2>タイムライン</h2>
-          <p className="text-muted-foreground">
-            すべての日記をまとめて見る
-          </p>
+          <p className="text-muted-foreground">すべての日記をまとめて見る</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col md:flex-row gap-3">
@@ -96,8 +104,13 @@ export function Timeline({ entries, onEntryClick }: TimelineProps) {
                 className="pl-9"
               />
             </div>
-            
-            <Select value={sortOrder} onValueChange={(value: 'newest' | 'oldest') => setSortOrder(value)}>
+
+            <Select
+              value={sortOrder}
+              onValueChange={(value: "newest" | "oldest") =>
+                setSortOrder(value)
+              }
+            >
               <SelectTrigger className="w-full md:w-[180px]">
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 <SelectValue />
@@ -115,10 +128,10 @@ export function Timeline({ entries, onEntryClick }: TimelineProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">すべての色</SelectItem>
-                {uniqueColors.map(color => (
+                {uniqueColors.map((color) => (
                   <SelectItem key={color} value={color}>
                     <div className="flex items-center gap-2">
-                      <div 
+                      <div
                         className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
                         style={{ backgroundColor: color }}
                       />
@@ -134,13 +147,13 @@ export function Timeline({ entries, onEntryClick }: TimelineProps) {
             <p className="text-muted-foreground">
               {filteredAndSortedEntries.length}件の日記
             </p>
-            {(searchQuery || colorFilter !== 'all') && (
+            {(searchQuery || colorFilter !== "all") && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  setSearchQuery('');
-                  setColorFilter('all');
+                  setSearchQuery("");
+                  setColorFilter("all");
                 }}
               >
                 フィルターをクリア
@@ -175,7 +188,7 @@ export function Timeline({ entries, onEntryClick }: TimelineProps) {
                     >
                       <IconComponent className="text-white" size={24} />
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="truncate">{entry.title}</h3>
@@ -183,7 +196,7 @@ export function Timeline({ entries, onEntryClick }: TimelineProps) {
                           {formatDateTime(entry.timestamp)}
                         </Badge>
                       </div>
-                      
+
                       <p className="text-muted-foreground line-clamp-2">
                         {entry.content}
                       </p>
