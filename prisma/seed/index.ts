@@ -3,7 +3,6 @@
 // ============================================
 import { PrismaClient } from "@prisma/client";
 import { seedDiaryEntries } from "./diary-entries";
-import { seedMoodEntries } from "./mood-entries";
 import { seedMoods } from "./moods";
 import { seedUsers } from "./users";
 
@@ -14,7 +13,6 @@ async function main() {
 
   // 既存データをクリア（開発時のみ）
   console.log("🗑️  既存データをクリア中...");
-  await prisma.moodEntry.deleteMany();
   await prisma.diaryEntry.deleteMany();
   await prisma.mood.deleteMany();
   await prisma.user.deleteMany();
@@ -35,11 +33,6 @@ async function main() {
   const diaryCount = await seedDiaryEntries(prisma, users, moods);
   console.log(`✅ 日記エントリーを ${diaryCount} 件作成しました\n`);
 
-  // 4. 気分エントリー作成
-  console.log("📊 気分エントリーを作成中...");
-  const moodEntryCount = await seedMoodEntries(prisma, users, moods);
-  console.log(`✅ 気分エントリーを ${moodEntryCount} 件作成しました\n`);
-
   // サマリー表示
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("📊 投入データサマリー");
@@ -47,7 +40,6 @@ async function main() {
   console.log(`  ユーザー:       ${await prisma.user.count()} 人`);
   console.log(`  気分マスター:   ${await prisma.mood.count()} 種類`);
   console.log(`  日記エントリー: ${await prisma.diaryEntry.count()} 件`);
-  console.log(`  気分エントリー: ${await prisma.moodEntry.count()} 件`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
   console.log("🎉 シードデータ投入完了！");
