@@ -16,7 +16,13 @@ export async function seedUsers(prisma: PrismaClient): Promise<User[]> {
   ];
 
   const users = await Promise.all(
-    usersData.map((data) => prisma.user.create({ data }))
+    usersData.map((data) =>
+      prisma.user.upsert({
+        where: { email: data.email },
+        update: { name: data.name },
+        create: data,
+      })
+    )
   );
 
   return users;
