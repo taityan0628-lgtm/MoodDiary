@@ -18,16 +18,25 @@ const dateInput = z.preprocess(
 );
 
 export const diaryRouter = router({
-  // 🟢 すべての日記を取得
-  getAll: publicProcedure.query(async () => {
-    return await prisma.diaryEntry.findMany({
-      include: {
-        mood: true,
-        user: true,
-      },
-      orderBy: { date: "desc" },
-    });
-  }),
+  // 🟢 ユーザーの日記を取得
+  getAll: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      return await prisma.diaryEntry.findMany({
+        where: {
+          userId: input.userId,
+        },
+        include: {
+          mood: true,
+          user: true,
+        },
+        orderBy: { timestamp: "desc" },
+      });
+    }),
 
   // 🟡 日記を追加
   add: publicProcedure
