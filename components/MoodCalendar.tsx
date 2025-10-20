@@ -1,8 +1,11 @@
+'use client';
+
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import * as Icons from 'lucide-react';
+import { trpc } from '@/utils/trpc';
 
 interface MoodEntry {
   id: string;
@@ -15,13 +18,41 @@ interface MoodEntry {
 }
 
 interface MoodCalendarProps {
-  entries: MoodEntry[];
   onEntryClick: (entry: MoodEntry) => void;
   onDayClick: (dayEntries: MoodEntry[]) => void;
 }
 
-export function MoodCalendar({ entries, onEntryClick, onDayClick }: MoodCalendarProps) {
+export function MoodCalendar({ onEntryClick, onDayClick }: MoodCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  // ユーザー取得
+  const { data: user } = trpc.user.getByEmail.useQuery({
+    email: 'sato@example.com',
+  });
+
+  // 日記データ取得
+  const { data: diaryEntries, isLoading, error } = trpc.diary.getAll.useQuery(
+    {
+      userId: user?.id || '',
+    },
+    {
+      enabled: !!user?.id,
+    }
+  );
+
+  // データベースから取得したデータをMoodEntry形式に変換
+  const entries: MoodEntry[] = useMemo(() => {
+    if (!diaryEntries) return [];
+    return diaryEntries.map((entry) => ({
+      id: entry.id,
+      title: entry.title,
+      content: entry.content,
+      color: entry.mood.color,
+      icon: entry.mood.icon,
+      date: entry.date.toISOString().split('T')[0],
+      timestamp: entry.timestamp.toISOString(),
+    }));
+  }, [diaryEntries]);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -90,6 +121,26 @@ export function MoodCalendar({ entries, onEntryClick, onDayClick }: MoodCalendar
   const isCurrentMonth = (date: Date) => {
     return date.getMonth() === month;
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-gray-500">
+          読み込み中...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-red-500">
+          エラーが発生しました: {error.message}
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
