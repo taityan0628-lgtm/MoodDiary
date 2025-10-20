@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { trpc } from '@/utils/trpc';
+import dayjs from 'dayjs';
 
 interface MoodEntry {
   id: string;
@@ -43,47 +44,63 @@ export function MoodCalendar({ onEntryClick, onDayClick }: MoodCalendarProps) {
   // データベースから取得したデータをMoodEntry形式に変換
   const entries: MoodEntry[] = useMemo(() => {
     if (!diaryEntries) return [];
+
     return diaryEntries.map((entry) => ({
       id: entry.id,
       title: entry.title,
       content: entry.content,
       color: entry.mood.color,
       icon: entry.mood.icon,
-      date: entry.date.toISOString().split('T')[0],
-      timestamp: entry.timestamp.toISOString(),
+      date: dayjs(entry.date).format('YYYY-MM-DD'),
+      timestamp: dayjs(entry.timestamp).toISOString(),
     }));
   }, [diaryEntries]);
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-
-  const firstDayOfMonth = new Date(year, month, 1);
-  const lastDayOfMonth = new Date(year, month + 1, 0);
-  const startDate = new Date(firstDayOfMonth);
-  startDate.setDate(startDate.getDate() - startDate.getDay());
-  
-  const endDate = new Date(lastDayOfMonth);
-  endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
-
-  const calendarDays = [];
-  const currentDateIter = new Date(startDate);
-  
-  while (currentDateIter <= endDate) {
-    calendarDays.push(new Date(currentDateIter));
-    currentDateIter.setDate(currentDateIter.getDate() + 1);
-  }
-
+  // 日付ごとにエントリーをグループ化
   const entriesByDate = useMemo(() => {
     const map = new Map<string, MoodEntry[]>();
-    entries.forEach(entry => {
-      const dateKey = entry.date;
-      if (!map.has(dateKey)) {
-        map.set(dateKey, []);
+
+    entries.forEach((entry) => {
+      const existing = map.get(entry.date);
+      if (existing) {
+        existing.push(entry);
+      } else {
+        map.set(entry.date, [entry]);
       }
-      map.get(dateKey)!.push(entry);
     });
+
     return map;
   }, [entries]);
+
+  // カレンダーに表示する日付の配列を生成
+  const calendarDays = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    // 月の最初と最後の日
+    const firstDay = dayjs(new Date(year, month, 1));
+    const lastDay = dayjs(new Date(year, month + 1, 0));
+
+    // カレンダーの開始日（月の最初の日の週の日曜日）
+    const startDay = firstDay.subtract(firstDay.day(), 'day');
+
+    // カレンダーの終了日（月の最後の日の週の土曜日）
+    const endDay = lastDay.add(6 - lastDay.day(), 'day');
+
+    // 日付の配列を生成
+    const days: Date[] = [];
+    let current = startDay;
+
+    while (current.isBefore(endDay) || current.isSame(endDay, 'day')) {
+      days.push(current.toDate());
+      current = current.add(1, 'day');
+    }
+
+    return days;
+  }, [currentDate]);
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
 
   const goToPreviousMonth = () => {
     setCurrentDate(new Date(year, month - 1, 1));
@@ -98,14 +115,14 @@ export function MoodCalendar({ onEntryClick, onDayClick }: MoodCalendarProps) {
   };
 
   const getIconComponent = (iconName: string) => {
-    const IconComponent = (Icons as any)[iconName];
-    return IconComponent || Icons.Circle;
+    const icons = Icons as unknown as Record<string, React.ComponentType<{ size?: number; className?: string }>>;
+    return icons[iconName] || Icons.Circle;
   };
 
   const handleDayClick = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = dayjs(date).format('YYYY-MM-DD');
     const dayEntries = entriesByDate.get(dateStr) || [];
-    
+
     if (dayEntries.length === 1) {
       onEntryClick(dayEntries[0]);
     } else if (dayEntries.length > 1) {
@@ -114,12 +131,11 @@ export function MoodCalendar({ onEntryClick, onDayClick }: MoodCalendarProps) {
   };
 
   const isToday = (date: Date) => {
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
+    return dayjs(date).isSame(dayjs(), 'day');
   };
 
   const isCurrentMonth = (date: Date) => {
-    return date.getMonth() === month;
+    return dayjs(date).month() === month;
   };
 
   if (isLoading) {
@@ -165,19 +181,19 @@ export function MoodCalendar({ onEntryClick, onDayClick }: MoodCalendarProps) {
       <CardContent>
         <div className="grid grid-cols-7 gap-2">
           {['日', '月', '火', '水', '木', '金', '土'].map((day) => (
-            <div key={day} className="text-center p-2">
+            <div key={day} className="text-center p-2 font-semibold text-sm">
               {day}
             </div>
           ))}
-          
+
           {calendarDays.map((date, index) => {
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = dayjs(date).format('YYYY-MM-DD');
             const dayEntries = entriesByDate.get(dateStr) || [];
             const hasEntries = dayEntries.length > 0;
 
             return (
               <div
-                key={index}
+                key={`${dateStr}-${index}`}
                 className={`
                   min-h-20 p-2 rounded-lg border-2 transition-all
                   ${isCurrentMonth(date) ? 'bg-card' : 'bg-muted/30'}
@@ -187,9 +203,9 @@ export function MoodCalendar({ onEntryClick, onDayClick }: MoodCalendarProps) {
                 onClick={() => hasEntries && handleDayClick(date)}
               >
                 <div className={`text-sm mb-1 ${!isCurrentMonth(date) ? 'text-muted-foreground' : ''}`}>
-                  {date.getDate()}
+                  {dayjs(date).date()}
                 </div>
-                
+
                 <div className="flex flex-wrap gap-1">
                   {dayEntries.slice(0, 3).map((entry) => {
                     const IconComponent = getIconComponent(entry.icon);
