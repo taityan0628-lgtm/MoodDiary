@@ -1,48 +1,68 @@
+'use client';
+
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { trpc } from '@/utils/trpc';
 
 interface DiaryEntryProps {
   selectedColor: string;
   selectedIcon: string;
-  onSave: (entry: {
-    id: string;
-    title: string;
-    content: string;
-    color: string;
-    icon: string;
-    date: string;
-    timestamp: string;
-  }) => void;
+  onSave?: () => void; // 保存成功時のコールバック（オプション）
 }
 
 export function DiaryEntry({ selectedColor, selectedIcon, onSave }: DiaryEntryProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
+  // ユーザー取得
+  const { data: user } = trpc.user.getByEmail.useQuery({
+    email: 'sato@example.com',
+  });
+
+  // Mood一覧取得
+  const { data: moods } = (trpc as any).mood?.list?.useQuery?.();
+
+  // 日記追加のmutation
+  const utils = trpc.useUtils();
+  const addDiary = trpc.diary.add.useMutation({
+    onSuccess: () => {
+      // 保存成功時にTimelineのデータを再取得
+      utils.diary.getAll.invalidate();
+      setTitle('');
+      setContent('');
+      onSave?.();
+    },
+  });
+
   const handleSave = () => {
-    if (!title.trim() || !content.trim()) return;
-    
+    if (!title.trim() || !content.trim() || !user?.id || !moods) return;
+
+    // colorとiconから対応するmoodを見つける
+    const mood = moods.find(
+      (m: any) => m.color === selectedColor && m.icon === selectedIcon
+    );
+
+    if (!mood) {
+      console.error('選択された気分が見つかりません');
+      return;
+    }
+
     const now = new Date();
-    const entry = {
-      id: `entry-${now.getTime()}-${Math.random().toString(36).substr(2, 9)}`,
+
+    addDiary.mutate({
       title: title.trim(),
       content: content.trim(),
-      color: selectedColor,
-      icon: selectedIcon,
-      date: now.toISOString().split('T')[0],
-      timestamp: now.toISOString(),
-    };
-    
-    onSave(entry);
-    setTitle('');
-    setContent('');
+      moodId: mood.id,
+      userId: user.id,
+      date: now,
+    });
   };
 
-  const isValid = title.trim() && content.trim() && selectedColor && selectedIcon;
+  const isValid = title.trim() && content.trim() && selectedColor && selectedIcon && user?.id;
 
   return (
     <Card className="p-6 space-y-4">
@@ -81,13 +101,25 @@ export function DiaryEntry({ selectedColor, selectedIcon, onSave }: DiaryEntryPr
         </div>
       )}
 
-      <Button 
-        onClick={handleSave} 
-        disabled={!isValid}
+      <Button
+        onClick={handleSave}
+        disabled={!isValid || addDiary.isPending}
         className="w-full"
       >
-        日記を保存
+        {addDiary.isPending ? '保存中...' : '日記を保存'}
       </Button>
+
+      {addDiary.isError && (
+        <div className="text-sm text-red-500">
+          エラーが発生しました: {addDiary.error.message}
+        </div>
+      )}
+
+      {addDiary.isSuccess && (
+        <div className="text-sm text-green-500">
+          日記を保存しました！
+        </div>
+      )}
     </Card>
   );
 }
