@@ -18,4 +18,13 @@ export const userRouter = router({
         where: { id: input.id },
       });
     }),
+
+  // Email指定でユーザー取得
+  getByEmail: publicProcedure
+    .input(z.object({ email: z.string().email() }))
+    .query(async ({ input }) => {
+      return await prisma.user.findUnique({
+        where: { email: input.email },
+      });
+    }),
 });

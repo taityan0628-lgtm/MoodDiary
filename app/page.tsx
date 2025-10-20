@@ -21,67 +21,14 @@ interface MoodEntry {
   timestamp: string;
 }
 
-// Mock initial data
-const mockEntries: MoodEntry[] = [
-  {
-    id: "mock-1",
-    title: "楽しい一日",
-    content: "友達と遊んで、とても楽しい時間を過ごしました。今日は本当に幸せな気分です。",
-    color: "#FFD700",
-    icon: "Sun",
-    date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-    timestamp: new Date(Date.now() - 86400000 + 36000000).toISOString(),
-  },
-  {
-    id: "mock-2", 
-    title: "静かな午後",
-    content: "雨の音を聞きながら読書をしました。とても穏やかで心地よい時間でした。",
-    color: "#87CEEB",
-    icon: "Cloud",
-    date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // Yesterday
-    timestamp: new Date(Date.now() - 86400000 + 50400000).toISOString(), // Yesterday 14:00
-  },
-  {
-    id: "mock-3",
-    title: "新しい挑戦",
-    content: "新しいプロジェクトを始めました。情熱を持って取り組んでいきたいと思います。",
-    color: "#FF6B6B",
-    icon: "Zap",
-    date: new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0], // 2 days ago
-    timestamp: new Date(Date.now() - 86400000 * 2 + 32400000).toISOString(), // 2 days ago 09:00
-  },
-];
-
 export default function Page() {
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('');
-  const [entries, setEntries] = useState<MoodEntry[]>(mockEntries);
   const [selectedEntry, setSelectedEntry] = useState<MoodEntry | null>(null);
   const [selectedDayEntries, setSelectedDayEntries] = useState<MoodEntry[]>([]);
 
-  // Load entries from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('moodEntries');
-    if (saved) {
-      try {
-        const parsedEntries = JSON.parse(saved);
-        setEntries([...mockEntries, ...parsedEntries]);
-      } catch (error) {
-        console.error('Failed to load entries:', error);
-      }
-    }
-  }, []);
-
-  // Save entries to localStorage whenever entries change
-  useEffect(() => {
-    const userEntries = entries.filter(entry => 
-      !mockEntries.some(mock => mock.id === entry.id)
-    );
-    localStorage.setItem('moodEntries', JSON.stringify(userEntries));
-  }, [entries]);
-
   const handleSaveEntry = (newEntry: MoodEntry) => {
-    setEntries(prev => [newEntry, ...prev]);
+    // TODO: API経由で保存する実装が必要
     setSelectedColor('');
     setSelectedIcon('');
   };
@@ -144,21 +91,20 @@ export default function Page() {
 
           <TabsContent value="timeline">
             <Timeline
-              entries={entries}
               onEntryClick={handleEntryClick}
             />
           </TabsContent>
 
           <TabsContent value="calendar">
             <MoodCalendar
-              entries={entries}
+              entries={[]}
               onEntryClick={handleEntryClick}
               onDayClick={handleDayClick}
             />
           </TabsContent>
 
           <TabsContent value="chart">
-            <MoodChart entries={entries} />
+            <MoodChart entries={[]} />
           </TabsContent>
         </Tabs>
 
