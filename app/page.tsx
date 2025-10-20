@@ -27,8 +27,8 @@ export default function Page() {
   const [selectedEntry, setSelectedEntry] = useState<MoodEntry | null>(null);
   const [selectedDayEntries, setSelectedDayEntries] = useState<MoodEntry[]>([]);
 
-  const handleSaveEntry = (newEntry: MoodEntry) => {
-    // TODO: API経由で保存する実装が必要
+  const handleSaveSuccess = () => {
+    // 保存成功時に選択をクリア
     setSelectedColor('');
     setSelectedIcon('');
   };
@@ -84,7 +84,7 @@ export default function Page() {
               <DiaryEntry
                 selectedColor={selectedColor}
                 selectedIcon={selectedIcon}
-                onSave={handleSaveEntry}
+                onSave={handleSaveSuccess}
               />
             </div>
           </TabsContent>
