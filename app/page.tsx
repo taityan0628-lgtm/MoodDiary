@@ -97,7 +97,6 @@ export default function Page() {
 
           <TabsContent value="calendar">
             <MoodCalendar
-              entries={[]}
               onEntryClick={handleEntryClick}
               onDayClick={handleDayClick}
             />
